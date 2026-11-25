@@ -7,8 +7,8 @@
 # below (port 25) keeps the ticket E1-04 behaviour: no auth, no sender check,
 # no rate limit.
 
-smtp       inet  n       -       y       -       smtpd
-submission inet n       -       y       -       smtpd
+smtp       inet  n       -       y       -       -       smtpd
+submission inet n       -       y       -       -       smtpd
   -o syslog_name=postfix/submission
   -o smtpd_tls_security_level=none
   -o smtpd_sasl_auth_enable=yes
@@ -22,9 +22,11 @@ submission inet n       -       y       -       smtpd
   -o milter_macro_daemon_name=ORIGINATING
   # DKIM (Epic 2): add the milter option here, e.g.: -o smtpd_milters=inet:inet.dns
 
+postlog   unix-dgram n  -       n       -       1       postlogd
+
 # Services required by the SMTP server and the queue.
-pickup     inet n       -       y       -       pickup
-cleanup    inet n       -       y       -       cleanup
-qmgr       inet n       -       n       -       qmgr
-anvil      inet  n       -       y       -       anvil
-scache     unix  -       -       n       -       scache
+pickup     inet n       -       y       -       -       pickup
+cleanup    inet n       -       y       -       -       cleanup
+qmgr       inet n       -       n       -       -       qmgr
+anvil      inet  n       -       y       -       -       anvil
+scache     unix  -       -       n       -       -       scache

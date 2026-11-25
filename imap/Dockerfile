@@ -5,7 +5,7 @@
 FROM debian:trixie-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        dovecot \
+        dovecot-core \
         dovecot-imapd \
         dovecot-lmtpd \
     && rm -rf /var/lib/apt/lists/*

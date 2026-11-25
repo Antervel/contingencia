@@ -23,6 +23,10 @@ virtual_mailbox_domains = copies.invalid
 virtual_mailbox_maps = texthash:/config/postfix/virtual_mailboxes
 virtual_transport = lmtp:inet:imap:24
 
+# Copy rule (ticket E1-05, hypothesis H1): relayed mail also gets a BCC copy
+# delivered to the internal address. The catch-all is added in ticket E1-06.
+recipient_bcc_maps = texthash:/config/postfix/recipient_bcc
+
 # Queue lifetimes: 100 days.
 maximal_queue_lifetime = 100d
 bounce_queue_lifetime = 100d

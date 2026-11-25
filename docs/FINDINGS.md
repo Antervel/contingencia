@@ -35,3 +35,10 @@ sections here.
 - Raw source is returned as plain text; checksums of the sent message and the stored source are compared in later tickets (E1-07).
 - The sink stores the raw message source as received and does not rewrite it on SMTP receive; any header added by the sink must be documented here and will be checked during outage testing (E1-07).
 
+## The copy rule (ticket E1-05)
+
+- Implementation: `recipient_bcc_maps = texthash:/config/postfix/recipient_bcc` with one BCC entry per fixture mailbox; the catch-all is deliberately not added yet (ticket E1-06).
+- H1 (end to end): pending runtime verification. With `main` down, a message to `alice@client.test` must produce exactly one queued original and exactly one delivered copy; with `main` up, one original in the sink and one copy in the INBOX.
+- H2, H3 and H7 (end to end): pending runtime verification of the `.invalid` internal domain, the `^` separator and the two-name-one-mailbox behaviour through BCC + LMTP + IMAP.
+- Evidence for each observation is collected in `docs/evidence/E1-05/` (log excerpts, command outputs, raw messages) as required by the ticket.
+

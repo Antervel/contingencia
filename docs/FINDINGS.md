@@ -42,3 +42,9 @@ sections here.
 - H2, H3 and H7 (end to end): pending runtime verification of the `.invalid` internal domain, the `^` separator and the two-name-one-mailbox behaviour through BCC + LMTP + IMAP.
 - Evidence for each observation is collected in `docs/evidence/E1-05/` (log excerpts, command outputs, raw messages) as required by the ticket.
 
+## Catch-all and recipient policy (ticket E1-06)
+
+- Implementation: catch-all BCC entry added to `recipient_bcc` (`@client.test` → `_catchall^client.test@copies.invalid`); relay recipient map added via `relay_recipient_maps = texthash:/config/postfix/relay_recipients`.
+- H4 (first half): exact BCC entries take precedence over the domain catch-all; the catch-all handles addresses without their own mailbox.
+- H10 (first half): both the accept-any mode (relay domains only) and the listed-addresses-only mode (via `relay_recipient_maps`) are now wired for testing.
+

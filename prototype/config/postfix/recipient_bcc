@@ -1,9 +1,11 @@
-# BCC map for the prototype (ticket E1-05, hypothesis H1).
+# BCC map for the prototype (ticket E1-05, hypothesis H1; catch-all added in ticket E1-06).
 #
-# One BCC copy per fixture mailbox: mail relayed for the client address also
-# gets a copy delivered to the internal address over LMTP. The catch-all BCC
-# entry is added in ticket E1-06 and is deliberately absent here.
+# One BCC copy per fixture mailbox, plus the catch-all for the client domain that
+# has one. The catch-all is the domain-wide BCC entry; exact-address entries take
+# precedence over it (hypothesis H4). The catch-all for `other.test` does not exist
+# in the fixtures and is deliberately absent here.
 
 alice@client.test    alice^client.test@copies.invalid
 bob@client.test      bob^client.test@copies.invalid
 carol@other.test     carol^other.test@copies.invalid
+@client.test         _catchall^client.test@copies.invalid

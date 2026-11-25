@@ -27,6 +27,9 @@ virtual_transport = lmtp:inet:imap:24
 # delivered to the internal address. The catch-all is added in ticket E1-06.
 recipient_bcc_maps = texthash:/config/postfix/recipient_bcc
 
+# Recipient policy (ticket E1-06, hypothesis H10): listed relay recipients.
+relay_recipient_maps = texthash:/config/postfix/relay_recipients
+
 # Queue lifetimes: 100 days.
 maximal_queue_lifetime = 100d
 bounce_queue_lifetime = 100d

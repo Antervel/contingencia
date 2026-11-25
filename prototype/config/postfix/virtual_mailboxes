@@ -1,0 +1,10 @@
+# Internal mailbox domain L (copies.invalid) delivery addresses (ticket E1-04,
+# hypotheses H2 and H7).
+#
+# One internal delivery address per fixture mailbox, delivered over LMTP to
+# the imap container (virtual_transport = lmtp:inet:imap:24).
+
+alice^client.test@copies.invalid     alice@client.test
+bob^client.test@copies.invalid       bob@client.test
+_catchall^client.test@copies.invalid _catchall@client.test
+carol^other.test@copies.invalid      carol@other.test

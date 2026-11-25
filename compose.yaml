@@ -1,13 +1,18 @@
 # Prototype stack for Epic 1 of the Contingency Mail Appliance.
 #
-# E1-02 replaced the `main` placeholder with the fake SMTP sink (Mailpit).
 # E1-03 gave the `imap` service a real Dovecot image and hand-written
-# prototype configuration. The real Postfix (mta) image arrives in E1-04.
+# prototype configuration. E1-04 gave the `mta` service a baseline Postfix
+# image and hand-written configuration. The final admin-generated Postfix and
+# Dovecot configurations arrive later.
 
 services:
   mta:
-    image: debian:trixie-slim
-    command: ["sleep", "infinity"]
+    build:
+      context: .
+      dockerfile: mta/Dockerfile
+    depends_on:
+      imap:
+        condition: service_started
     networks:
       - appliance
     ports:
@@ -16,6 +21,12 @@ services:
     volumes:
       - ./prototype/config:/config:ro
       - queue:/var/spool/postfix
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/25'"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   imap:
     build:

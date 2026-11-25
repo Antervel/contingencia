@@ -14,6 +14,12 @@ sections here.
 - Pinned by tag in the Dockerfiles of the `imap` (ticket E1-03) and `mta` (ticket E1-04), for
   example `debian:trixie-slim`.
 - Dovecot version in the `imap` image: **2.4.5** (Debian 13 "Trixie", package `dovecot-core`).
+- Postfix version in the `mta` image: the version shipped with Debian 13 "Trixie" (package `postfix`).
+
+## Postfix baseline relay (ticket E1-04)
+
+- H2 (first half): the internal mailbox domain `copies.invalid` is declared as a Postfix virtual mailbox domain (`virtual_mailbox_domains`) and delivered over LMTP to the `imap` container (`virtual_transport = lmtp:inet:imap:24`); internal delivery addresses are listed in `/config/postfix/virtual_mailboxes`.
+- H5 (first half): the `texthash:` tables used in the prototype (`relay_domains`, `transport`, `virtual_mailbox_maps`) are readable and set in `postconf` (for example `postmap -q KEY texthash:/config/postfix/relay_domains`).
 
 ## Fake `main` sink (ticket E1-02)
 

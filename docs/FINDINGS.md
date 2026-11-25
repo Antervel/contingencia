@@ -13,6 +13,7 @@ sections here.
 - Debian release used for the images: **Debian 13 "Trixie"** — the current stable release (13.0 released 2025-08-09, latest update 13.8 released 2026-11-21; Debian 12 "Bookworm" is the current oldstable).
 - Pinned by tag in the Dockerfiles of the `imap` (ticket E1-03) and `mta` (ticket E1-04), for
   example `debian:trixie-slim`.
+- Dovecot version in the `imap` image: **2.4.5** (Debian 13 "Trixie", package `dovecot-core`).
 
 ## Fake `main` sink (ticket E1-02)
 

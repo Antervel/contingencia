@@ -11,7 +11,7 @@ A Docker Compose stack with three services on one private network:
 | Service | Purpose | State |
 |---|---|---|
 | `mta` | Mail transfer agent (Postfix). Accepts mail, relays the original to `main`, delivers copies. | Placeholder (sleeping) — real image in ticket E1-04 |
-| `imap` | Mail delivery and mailbox server (Dovecot). Stores copies, serves IMAP/LMTP/SASL. | Placeholder (sleeping) — real image in ticket E1-03 |
+| `imap` | Mail delivery and mailbox server (Dovecot). Stores copies, serves IMAP/LMTP/SASL. | Dovecot (from `imap/Dockerfile`), config in `prototype/config/dovecot/` (ticket E1-03) |
 | `main` | Fake `main` SMTP sink (the real appliance) — Mailpit: accepts any recipient/sender, stores every message raw, web UI + REST API. | `axllent/mailpit` (E1-02) |
 
 The hand-written configuration lives in `prototype/config/` (mounted read-only at `/config` in both `mta` and `imap`). The mail store and the delivery queue are persistent named volumes.

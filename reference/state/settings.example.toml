@@ -1,0 +1,21 @@
+# Example appliance settings (reference state, ticket E1-10; format: technical.md section 4.3).
+
+public_hostname = "backup.client.test"
+main = "main"
+
+# Name of the internal mailbox domain L (technical.md section 4.3).
+# The address separator is "^", fixed in the code.
+l_name = "copies.invalid"
+
+queue_lifetime_days = 100
+
+accept_any_recipient = true
+
+dkim_selector = "contingency"
+
+submission_rate_limit = 1
+
+[admin]
+# Argon2id hash of the initial admin password (technical.md section 4.2).
+# Placeholder for the example; generated at install time.
+password_hash = "PLACEHOLDER-ADMIN-PASSWORD-HASH"

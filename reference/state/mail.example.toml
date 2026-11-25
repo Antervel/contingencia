@@ -1,0 +1,32 @@
+# Example mail state (reference state, ticket E1-10; fixtures: EPIC.md section 3).
+
+[[domains]]
+domain = "client.test"
+enabled = true
+catch_all = true
+
+[[domains.mailboxes]]
+local_part = "alice"
+password_hash = "$6$WNcTD3C6Qn4dnhb4$TKyZ3Hwd6DjQF77Y3irFZnyUASN4DVWtnPu7YXpONZ2f/YRaMFk8vvVpYhGYLgufbGgvKVPgyJH0KF4ArQ6Ao0"
+
+[[domains.mailboxes]]
+local_part = "bob"
+password_hash = "$6$Hxmxl3Ya9AMB4gNl$cCeufl.LR1M4Svp6eX6U.WTGSJLyhu.Eg/4ldl.MgEiDfGSZXEf9uTdpGb/euXy3BO7UBbcnottZWAIb3aDRZ."
+
+[[domains.mailboxes]]
+local_part = "_catchall"
+password_hash = "$6$xBaCy0OLYDpOwnyg$RaHkszd9htK6HmCAmYh8JAiax0VwMC03/Nz9BRzmZ0N.IFKfoBiJQJczQgUkWKx6i8QBcJv6/ChfGI5ps/Man1"
+
+[[domains]]
+domain = "other.test"
+enabled = true
+catch_all = false
+
+[[domains.mailboxes]]
+local_part = "carol"
+password_hash = "$6$sokKLwgz/REIxlR3$EihoyQJr/dZW.Q0aaB2LEitWT1RjfuBCwaQPeTw1bpV.CJBxCy1t6dasDxDQJosJmYJgK0QihJNUarDGN7jJi1"
+
+[[domains]]
+domain = "outside.test"
+enabled = true
+catch_all = false

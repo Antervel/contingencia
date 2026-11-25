@@ -1,0 +1,11 @@
+# Relay domains for the prototype (ticket E1-10).
+#
+# Client domains accepted from any client and relayed to the fake main sink
+# ([main]:25). In the final system these are generated from the admin state; in
+# the prototype they are hand-written from the fixtures of EPIC.md section 3.
+
+client.test
+other.test
+
+# Prototype-only: the fake "outside world" recipient domain, relayed to the sink.
+outside.test

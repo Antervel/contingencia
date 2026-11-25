@@ -80,3 +80,47 @@ sections here.
   (`-o milter_macro_daemon_name=ORIGINATING`) with a comment.
 - Evidence for the ticket lives in `docs/evidence/E1-08/`; the H9 result goes in `docs/FINDINGS.md`.
 
+## Configuration reload behavior (ticket E1-09)
+
+- Context: the Rust `admin` service rewrites configuration files and then makes the running services
+  notice; it must do the minimum necessary and verify the change took effect. This ticket determines,
+  by experiment, what each kind of change requires, and produces a reload table for the admin service
+  author to follow literally.
+- H5 (reload): pending runtime verification. Every Postfix change (P1–P10) is covered by the reload
+  table below; the `texthash:` tables used in this prototype are readable through Postfix lookups
+  without a `postmap` step, so the minimal reload for table changes is expected to be
+  `postfix reload`.
+- H6 (reload): pending runtime verification. The minimal reload for each Dovecot change (D1–D4) is
+  recorded in the reload table below; the expectation is that `doveadm reload` is sufficient, with
+  `doveadm user` / `doveadm auth test` as the verification commands.
+
+### Reload table
+
+| Change | Service | Reload needed | Verification command | Side effects |
+|---|---|---|---|---|
+| P1 | Postfix (mta) | `postfix reload` | `postmap -q <new-key> texthash:/config/postfix/relay_domains` (+ transport entry) | none expected |
+| P2 | Postfix (mta) | `postfix reload` | `postmap -q <key> texthash:/config/postfix/relay_domains` (+ transport entry) → not found | none expected |
+| P3 | Postfix (mta) | `postfix reload` | BCC/virtual/sender-login lookups, e.g. `postmap -q alice@client.test texthash:/config/postfix/recipient_bcc` | none expected |
+| P4 | Postfix (mta) | `postfix reload` | mailbox lookups → not found | none expected |
+| P5 | Postfix (mta) | `postfix reload` | `@client.test` lookup in `recipient_bcc` → `_catchall^client.test@copies.invalid` | none expected |
+| P6 | Postfix (mta) | `postfix reload` | catch-all lookup → not found | none expected |
+| P7 | Postfix (mta) | `postfix reload` | `postconf -n` / `relay_recipient_maps` lookup | none expected |
+| P8 | Postfix (mta) | `postfix reload` | `postconf maximal_queue_lifetime bounce_queue_lifetime` | queue settings only |
+| P9 | Postfix (mta) | `postfix reload` | transport lookup / `postconf` | none expected |
+| P10 | Postfix (mta) | `postfix reload` | multiple mailbox lookups | none expected |
+| D1 | Dovecot (imap) | `doveadm reload` | `doveadm user <name>` (both login and delivery names) | auth/user cache warm-up possible |
+| D2 | Dovecot (imap) | `doveadm reload` | `doveadm auth test <user> <new-pass>` (old pass must fail) | existing sessions keep old credentials until re-auth |
+| D3 | Dovecot (imap) | `doveadm reload` | `doveadm user <name>` | — |
+| D4 | Dovecot (imap) | `doveadm reload` | `doveadm user <name>` per mailbox | — |
+
+### Atomic replace, failed syntax, rollback, mailbox deletion
+
+- Atomic replace (step 7): the admin service must write new table files to a temporary name and rename over the live file (atomic replace); a plain reload afterwards is sufficient. Evidence: `docs/evidence/E1-09/`.
+- Failed syntax (step 8): a broken table line must be observed — Postfix logs the error and refuses to apply the broken map; Dovecot refuses to reload/start on invalid user-file syntax. Exact behaviour pending runtime verification; evidence: `docs/evidence/E1-09/`.
+- Rollback (step 9): restore the previous file, reload, verify the old behaviour is back. Procedure documented; runtime demonstration pending (at least one Postfix and one Dovecot change).
+- Mailbox directory deletion (step 10): after removing a mailbox from the user file, delete its Maildir from inside the `imap` container while Dovecot is running; observe errors. Pending runtime verification.
+
+## Outputs
+
+Reload table and verification commands in `docs/FINDINGS.md`, evidence in `docs/evidence/E1-09/`, results for H5 and H6.
+

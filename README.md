@@ -12,7 +12,7 @@ A Docker Compose stack with three services on one private network:
 |---|---|---|
 | `mta` | Mail transfer agent (Postfix). Accepts mail, relays the original to `main`, delivers copies. | Placeholder (sleeping) — real image in ticket E1-04 |
 | `imap` | Mail delivery and mailbox server (Dovecot). Stores copies, serves IMAP/LMTP/SASL. | Placeholder (sleeping) — real image in ticket E1-03 |
-| `main` | Fake `main` SMTP sink (the real appliance). | Placeholder (sleeping) — real image in ticket E1-02 |
+| `main` | Fake `main` SMTP sink (the real appliance) — Mailpit: accepts any recipient/sender, stores every message raw, web UI + REST API. | `axllent/mailpit` (E1-02) |
 
 The hand-written configuration lives in `prototype/config/` (mounted read-only at `/config` in both `mta` and `imap`). The mail store and the delivery queue are persistent named volumes.
 
@@ -33,6 +33,7 @@ All published ports are bound to `127.0.0.1` on the host and exist only for the 
 | `mta` | 587 (submission) | 5587 |
 | `imap` | 143 (IMAP) | 1143 |
 | `main` | 25 (SMTP sink) | 2526 |
+| `main` | 8025 (web/API) | 8025 |
 
 The final system will not publish IMAP or submission.
 

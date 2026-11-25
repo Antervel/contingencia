@@ -1,0 +1,11 @@
+# Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Test output and logs
+prototype/tests/output/
+*.log
+*.pid

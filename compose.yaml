@@ -1,0 +1,50 @@
+# Prototype stack for Epic 1 of the Contingency Mail Appliance.
+#
+# E1-01 skeleton: three placeholder services that prove the plumbing
+# (private network, volumes, port bindings, cross-container reachability).
+# Real images and configuration arrive in later tickets:
+#   - E1-02: fake `main` SMTP sink
+#   - E1-03: `imap` container (Dovecot)
+#   - E1-04: `mta` container (Postfix)
+#
+# Publishing is for testing only: bound to 127.0.0.1 on the host, never 0.0.0.0.
+
+services:
+  mta:
+    image: debian:trixie-slim
+    command: ["sleep", "infinity"]
+    networks:
+      - appliance
+    ports:
+      - "127.0.0.1:2525:25"
+      - "127.0.0.1:5587:587"
+    volumes:
+      - ./prototype/config:/config:ro
+      - queue:/var/spool/postfix
+
+  imap:
+    image: debian:trixie-slim
+    command: ["sleep", "infinity"]
+    networks:
+      - appliance
+    ports:
+      - "127.0.0.1:1143:143"
+    volumes:
+      - ./prototype/config:/config:ro
+      - mail:/var/mail/vhosts
+
+  main:
+    image: debian:trixie-slim
+    command: ["sleep", "infinity"]
+    networks:
+      - appliance
+    ports:
+      - "127.0.0.1:2526:25"
+
+volumes:
+  mail:
+  queue:
+
+networks:
+  appliance:
+    driver: bridge

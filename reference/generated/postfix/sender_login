@@ -4,7 +4,7 @@
 # to use it. Postfix enforces this on the submission service via
 # check_sender_login_mismatch (master.cf). Port 25 does not apply this check.
 
-alice@client.test    alice@client.test
-bob@client.test      bob@client.test
-carol@other.test     carol@other.test
-_catchall@client.test    _catchall@client.test
+_catchall@client.test _catchall@client.test
+alice@client.test alice@client.test
+bob@client.test bob@client.test
+carol@other.test carol@other.test

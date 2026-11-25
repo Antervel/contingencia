@@ -1,0 +1,30 @@
+# Postfix master file (ticket E1-08).
+#
+# Submission service: authenticated submission only. No TLS in the prototype
+# (the network is private); relaying allowed only for authenticated users;
+# unauthenticated clients rejected for any recipient; sender login check and
+# rate limit (1 message per second) applied here. The baseline SMTP service
+# below (port 25) keeps the ticket E1-04 behaviour: no auth, no sender check,
+# no rate limit.
+
+smtp       inet  n       -       y       -       smtpd
+submission inet n       -       y       -       smtpd
+  -o syslog_name=postfix/submission
+  -o smtpd_tls_security_level=none
+  -o smtpd_sasl_auth_enable=yes
+  -o smtpd_sasl_type=dovecot
+  -o smtpd_sasl_path=inet:imap:12345
+  -o smtpd_sasl_security_options=noanonymous
+  -o smtpd_relay_restrictions=permit_sasl_authenticated,reject
+  -o smtpd_recipient_restrictions=permit_sasl_authenticated,reject
+  -o smtpd_sender_restrictions=check_sender_login_mismatch
+  -o smtpd_client_message_rate_limit=1
+  -o milter_macro_daemon_name=ORIGINATING
+  # DKIM (Epic 2): add the milter option here, e.g.: -o smtpd_milters=inet:inet.dns
+
+# Services required by the SMTP server and the queue.
+pickup     inet n       -       y       -       pickup
+cleanup    inet n       -       y       -       cleanup
+qmgr       inet n       -       n       -       qmgr
+anvil      inet  n       -       y       -       anvil
+scache     unix  -       -       n       -       scache

@@ -7,6 +7,7 @@ FROM debian:trixie-slim
 RUN apt-get update && apt-get install -y --no-install-recommends postfix && rm -rf /var/lib/apt/lists/*
 
 COPY prototype/config/postfix/main.cf /etc/postfix/main.cf
+COPY prototype/config/postfix/master.cf /etc/postfix/master.cf
 
 EXPOSE 25
 

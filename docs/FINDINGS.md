@@ -54,3 +54,29 @@ sections here.
   by the `mta` and delivered unmodified when `main` returns; the queue must survive an `mta`
   restart (fallback F8 if it does not). Evidence goes in `docs/evidence/E1-07/`.
 
+## Authenticated submission, sender enforcement, rate limit (ticket E1-08)
+
+- Implementation: new `prototype/config/postfix/master.cf` with the `submission` service on
+  port 587 (built by `mta/Dockerfile`): SASL via Dovecot (`smtpd_sasl_type = dovecot`,
+  `smtpd_sasl_path = inet:imap:12345`), no TLS (private network); relay restricted to
+  authenticated users on submission (`smtpd_relay_restrictions = permit_sasl_authenticated, reject`);
+  unauthenticated clients rejected for any recipient (`smtpd_recipient_restrictions =
+  permit_sasl_authenticated, reject`); sender login check via `sender_login_maps` +
+  `check_sender_login_mismatch`; rate limit `smtpd_client_message_rate_limit = 1` with
+  `anvil_rate_time_unit = 1s` (1 message per second, strict window).
+- H9 (authentication): pending runtime verification. Login through Dovecot over the private
+  network works for the right password and fails for others; the auth listener (TCP 12345 on the
+  `imap` service) is not published to the host.
+- H9 (enforcement): pending runtime verification. A user may send only as their own address;
+  mismatches are rejected at SMTP time on submission; port 25 keeps the E1-04 behaviour (no
+  sender check, no auth, no rate limit).
+- H9 (rate): pending runtime verification. The combined limit of about 1 message per second is
+  demonstrated with the exact parameters and observed SMTP responses recorded; port 25 keeps no
+  rate limit.
+- Outgoing delivery and loops (ticket steps 11-13): pending runtime verification — send as
+  `alice@client.test` to `friend@outside.test` (reaches sink, no copy), to `bob@client.test`
+  (relay toward `main` plus BCC copy for bob), to `nobody@client.test` (catch-all, E1-06).
+- DKIM: out of scope for this ticket (Epic 2); `master.cf` carries a marked spot for the milter
+  (`-o milter_macro_daemon_name=ORIGINATING`) with a comment.
+- Evidence for the ticket lives in `docs/evidence/E1-08/`; the H9 result goes in `docs/FINDINGS.md`.
+

@@ -10,7 +10,7 @@ A Docker Compose stack with three services on one private network:
 
 | Service | Purpose | State |
 |---|---|---|
-| `mta` | Mail transfer agent (Postfix). Accepts mail, relays the original to `main`, delivers copies. | Postfix (from `mta/Dockerfile`), baseline relay config in `prototype/config/postfix/` (ticket E1-04) |
+| `mta` | Mail transfer agent (Postfix). Accepts mail, relays the original to `main`, delivers copies. | Postfix (from `mta/Dockerfile`), baseline relay config in `prototype/config/postfix/` (ticket E1-04), authenticated submission (port 587, tickets E1-08) |
 | `imap` | Mail delivery and mailbox server (Dovecot). Stores copies, serves IMAP/LMTP/SASL. | Dovecot (from `imap/Dockerfile`), config in `prototype/config/dovecot/` (ticket E1-03) |
 | `main` | Fake `main` SMTP sink (the real appliance) — Mailpit: accepts any recipient/sender, stores every message raw, web UI + REST API. | `axllent/mailpit` (E1-02) |
 

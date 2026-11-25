@@ -48,3 +48,9 @@ sections here.
 - H4 (first half): exact BCC entries take precedence over the domain catch-all; the catch-all handles addresses without their own mailbox.
 - H10 (first half): both the accept-any mode (relay domains only) and the listed-addresses-only mode (via `relay_recipient_maps`) are now wired for testing.
 
+## Outage and recovery scenario (ticket E1-07)
+
+- H8: pending runtime verification. With `main` down, a message to a client address must be queued
+  by the `mta` and delivered unmodified when `main` returns; the queue must survive an `mta`
+  restart (fallback F8 if it does not). Evidence goes in `docs/evidence/E1-07/`.
+

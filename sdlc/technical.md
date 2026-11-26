@@ -2,6 +2,8 @@
 
 Companion to `contingency-appliance-PRD.md`. Version names are left to implementation time. Items marked **(verify)** are things I believe are right but that must be tested first.
 
+Prototype results of the E1 phase (hypothesis outcomes, design changes, go/no-go) are recorded in `docs/FINDINGS.md`.
+
 The appliance is a small set of containers deployed together with one Docker Compose file, in a sealed internal environment. The admin service is trusted with the Docker socket.
 
 ---
@@ -52,9 +54,11 @@ None of these ports are published to the host.
 - **Relay domains.** The client's domains are Postfix `relay_domains`. A generated transport map routes each of them to `main` directly (`[main-host]:25`), without an MX lookup, so mail can never loop back to the appliance.
 - **Queue lifetime.** `maximal_queue_lifetime` is set from the settings file, with a default of **100 days**. `bounce_queue_lifetime` is set to the same value, so a message that cannot be delivered for 100 days bounces only after that. The queue volume must be sized for a long outage.
 - **Recipient policy.** "Accept any address" leaves relay recipients open. "Listed only" adds a generated `relay_recipient_maps` file.
-- **Copy rule.** `recipient_bcc_maps` is a generated map: `a@something.com` → `a^something.com@L`. For a catch-all domain, an entry `@something.com` → `_catchall^something.com@L`. Postfix tries the full address before the `@domain` form, so known addresses do not also land in the catch-all **(verify)**. Copies are made for relayed mail as well as local mail **(verify)**.
-- **Internal domain `L`.** Its name is chosen **at install time** (see 4.3) and is fixed afterwards. It is a Postfix `virtual_mailbox_domains` entry delivered over LMTP to `imap`. The generated `virtual_mailbox_maps` lists every `a^something.com@L`. `L` uses a never-routed name such as one ending in `.invalid` **(verify Postfix accepts it)**.
-- **Table format.** Generated tables use Postfix's `texthash:` type, which reads the plain text file directly, so no `postmap` step is needed. A change then needs at most a `postfix reload` **(verify)**.
+- **Copy rule.** The design now uses `<mailbox>@<L>` delivery names (for example `alice@copies.invalid`, `_catchall@copies.invalid`) instead of the earlier `^`-separated form; the earlier full-address-before-`@domain` assumption did not hold, so the generated maps key on full delivery addresses and known addresses do not also land in the catch-all. Copies are made for relayed mail as well as local mail.
+- **Internal domain `L`.** Its name is chosen **at install time** (see 4.3) and is fixed afterwards. It is a Postfix `virtual_mailbox_domains` entry delivered over LMTP to `imap`. The generated `virtual_mailbox_maps` lists every `<mailbox>@L`. `L` uses a never-routed name such as one ending in `.invalid`; the E1 prototype confirmed Postfix accepts it and delivers over LMTP.
+- **Table format.** Generated tables use Postfix's `texthash:` type, which reads the plain text file directly, so no `postmap` step is needed. A configuration change then needs at most a full container restart of `mta`: a `postfix reload` was found to crash the master (SIGSEGV) in the E1 prototype environment.
+
+These E1 prototype findings are recorded in `docs/FINDINGS.md` (copy rule H1/H3, internal domain H2, table type H5, reload behaviour).
 
 ### 3.2 Mailboxes (`imap`)
 
@@ -71,7 +75,7 @@ So the same Maildir answers to both names. No SQL and no Dovecot-side tricks are
 - Postfix authenticates through Dovecot (SASL, over the private network).
 - `smtpd_sender_login_maps` (generated) lets `a@something.com` use only that sender. `reject_sender_login_mismatch` enforces it.
 - The DKIM milter is attached to the **submission service only** (in `master.cf`), not to port 25. Relayed mail to `main` is never signed.
-- **Rate limit: 1 message per second** on submission. Webmail submits every user's mail from the same container address, so Postfix's per-client limit (anvil) would apply to all users **combined**, not per user. That is the v1 behavior: a sustained rate above one message per second from webmail is slowed down, which is enough to stop a compromised mailbox from sending bulk spam. A true per-sender limit would need a separate policy service, and is left for later. The limit applies to submission only, never to mail received on port 25 **(verify the exact anvil settings, which count messages per time window)**.
+- **Rate limit: 1 message per second** on submission. Webmail submits every user's mail from the same container address, so Postfix's per-client limit (anvil) would apply to all users **combined**, not per user. That is the v1 behavior: a sustained rate above one message per second from webmail is slowed down, which is enough to stop a compromised mailbox from sending bulk spam. A true per-sender limit would need a separate policy service, and is left for later. The limit applies to submission only, never to mail received on port 25; the anvil-based settings (one message per second, one-second window) were confirmed by the E1 prototype scenario suite (E1-08 scenario 17).
 
 ### 3.4 DKIM (`dkim`)
 
@@ -235,7 +239,7 @@ Containers that read the config volume share a group ID, so the generated files 
   5. Check catch-all and non-catch-all precedence.
   6. Repeat an apply and check nothing changes.
   7. Make an apply fail on purpose and check it rolls back.
-- **Manual pre-build checks:** the **(verify)** items above, done by hand on a plain Compose prototype first. In particular: copy rule on relayed mail, the `.invalid` domain, `texthash` tables, and the dkimpy-milter configuration format.
+- **Manual pre-build checks:** the prototype-phase items above were checked on the hand-built Compose prototype through the E1 scenario suite; in particular: copy rule on relayed mail, the `.invalid` domain, `texthash` tables, and reload behaviour. The dkimpy-milter configuration format remains **(verify)** pending Epic 2.
 
 ## 9. Build order
 
@@ -262,4 +266,4 @@ Containers that read the config volume share a group ID, so the generated files 
 
 ## 11. Open decisions
 
-None at this point. The remaining uncertainty is in the **(verify)** items, which the hand-built prototype (section 9, step 1) is meant to settle.
+None at this point for the prototype phase. The remaining uncertainty is in later epics (DKIM milter configuration format, webmail proxy/TLS settings, admin service), which the hand-built prototype (section 9, step 1) was meant to settle.

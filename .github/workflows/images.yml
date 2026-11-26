@@ -97,7 +97,21 @@ jobs:
           docker pull "ghcr.io/${{ steps.repo.outputs.name }}/imap:e1-13-tmp-${{ github.sha }}"
 
       - name: Start stack from freshly built images and wait for healthy state
-        run: CONTINGENCY_TAG=e1-13-tmp-${{ github.sha }} docker compose -f compose.release.yaml up -d --wait
+        run: |
+          set -euo pipefail
+          attempt=1
+          max_attempts=2
+          while [ "$attempt" -le "$max_attempts" ]; do
+            if CONTINGENCY_TAG=e1-13-tmp-${{ github.sha }} docker compose -f compose.release.yaml up -d --wait; then
+              echo "stack started from freshly built images on attempt ${attempt}"
+              exit 0
+            fi
+            echo "stack start failed on attempt ${attempt}; retrying (${max_attempts} attempts max)"
+            attempt=$((attempt + 1))
+            sleep 15
+          done
+          echo "stack start failed after ${max_attempts} attempts"
+          exit 1
 
       - name: Postfix configuration check (mta)
         run: docker compose -f compose.release.yaml exec -T mta postfix check

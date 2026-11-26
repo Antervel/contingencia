@@ -47,6 +47,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Compute lowercase image repository
+        id: repo
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
       - name: Record build timestamp
         id: created
         run: echo "ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
@@ -58,7 +62,7 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           push: true
-          tags: ghcr.io/${{ github.repository }}/${{ matrix.image }}:e1-13-tmp-${{ github.sha }}
+          tags: ghcr.io/${{ steps.repo.outputs.name }}/${{ matrix.image }}:e1-13-tmp-${{ github.sha }}
           labels: |
             org.opencontainers.image.source=${{ github.repositoryUrl }}
             org.opencontainers.image.revision=${{ github.sha }}
@@ -83,10 +87,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Compute lowercase image repository
+        id: repo
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
       - name: Pull freshly built images (temporary tags)
         run: |
-          docker pull "ghcr.io/${{ github.repository }}/mta:e1-13-tmp-${{ github.sha }}"
-          docker pull "ghcr.io/${{ github.repository }}/imap:e1-13-tmp-${{ github.sha }}"
+          docker pull "ghcr.io/${{ steps.repo.outputs.name }}/mta:e1-13-tmp-${{ github.sha }}"
+          docker pull "ghcr.io/${{ steps.repo.outputs.name }}/imap:e1-13-tmp-${{ github.sha }}"
 
       - name: Start stack from freshly built images and wait for healthy state
         run: CONTINGENCY_TAG=e1-13-tmp-${{ github.sha }} docker compose -f compose.release.yaml up -d --wait
@@ -136,12 +144,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Compute lowercase image repository
+        id: repo
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
       - name: Publish images (full commit hash and latest)
         run: |
           set -euo pipefail
           for image in mta imap; do
-            tmp="ghcr.io/${{ github.repository }}/${image}:e1-13-tmp-${{ github.sha }}"
-            final="ghcr.io/${{ github.repository }}/${image}"
+            tmp="ghcr.io/${{ steps.repo.outputs.name }}/${image}:e1-13-tmp-${{ github.sha }}"
+            final="ghcr.io/${{ steps.repo.outputs.name }}/${image}"
             docker pull "$tmp"
             docker tag "$tmp" "${final}:${{ github.sha }}"
             docker tag "$tmp" "${final}:latest"

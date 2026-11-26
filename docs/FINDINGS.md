@@ -142,6 +142,31 @@ sections here.
 - Total run time for the full 20-scenario suite is recorded here after the final full run
   (ticket target: a few minutes).
 
+## Master reload segfault (investigation note, ticket E1-11 follow-up)
+
+- Symptom: `postfix reload` inside the `mta` container deterministically causes the Postfix
+  master process to exit with **SIGSEGV** (~exit 139); the container then goes down and
+  crash-loops on compose restart.
+- Minimal reproduction:
+  ```
+  docker compose restart mta
+  sleep 45            # until Status = Up (healthy)
+  docker compose exec -T mta postfix reload
+  # -> container exits within ~10-30 seconds
+  ```
+- Isolation performed:
+  - Reload after plain restart crashes; restart without reload stays healthy (control).
+  - Crash persists with a **minimal** `master.cf` (smtp/pickup/cleanup/qmgr/postlog only) and
+    a **minimal** `main.cf` — so it is not caused by table content, service list, or the
+    `postlog` unix-dgram → unix change.
+  - Crash persists with both `maillog_file = /var/log/postfix.log` and `= /dev/stdout`.
+  - Conclusion: the segfault is in the Postfix **master reload handler / re-init path**
+    itself in this environment (Postfix 3.10.13, Debian 13 "Trixie"), independent of the
+    loaded configuration content.
+- Workaround in use: use `docker compose restart mta` (or stop/start) instead of
+  `postfix reload` when bringing the mta back up; re-investigate once a Postfix patch or
+  master re-exec behaviour is available.
+
 ## Outputs
 
 Reload table and verification commands in `docs/FINDINGS.md`, evidence in `docs/evidence/E1-09/`, results for H5 and H6.

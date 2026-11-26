@@ -137,12 +137,14 @@ When enabled for a domain, mail for addresses without their own mailbox is copie
 - **IR-5** Each container reports its own health, and the stack starts in a defined order (admin interface first, then the mail components, then webmail).
 - **IR-6** Upgrades replace one or more images. Configuration and mail volumes are kept, and a single component (for example webmail) can be upgraded without rebuilding the others.
 - **IR-7** The admin container has access to the Docker socket, so it can run commands in, restart and read logs of the other containers. No other container has it.
+- **IR-8** The container images we build (`mta`, `imap`, `dkim`, `admin`) are built and published **automatically by GitHub's CI/CD on every push to `main`**, with no manual step. Each published image is identifiable by the commit it was built from. An image is published only if the automated checks pass.
 
 ## 9. Assumptions
 
 - A human configures `main` to accept mail from the appliance, and publishes all DNS records (MX with the appliance at lower priority than `main`, SPF including the appliance, DKIM, DMARC, reverse DNS).
 - The appliance's public IP has a good reputation and a matching reverse DNS name.
 - An SSL terminator already exists, forwards the `X-Forwarded-Proto` header, and reaches the appliance over a trusted network path, since logins cross it as plain HTTP.
+- The environment can obtain the published images from the registry that the CI/CD pipeline pushes to (GitHub's container registry, unless changed). If the sealed environment cannot reach it, images are transferred to it by other means, which is outside this product.
 - The environment is internal and sealed, built for this one client. The admin interface may therefore hold the Docker socket, which gives it full control of the host's containers, and its login is the main protection for that.
 - The number of users and mail volume are modest, and the appliance is used during outages only.
 - Receiving spam during an outage is acceptable. `main` still filters the queued originals.
@@ -174,6 +176,7 @@ When enabled for a domain, mail for addresses without their own mailbox is copie
 - **AC-11** Restarting any single container, or the whole appliance, loses no configuration, stored mail or queued mail.
 - **AC-11a** A change that fails verification is rolled back, and the appliance keeps working with its previous configuration.
 - **AC-12** On a fresh host, the documented install steps alone produce a working appliance.
+- **AC-13** After a push to `main` whose checks pass, the new images appear in the registry automatically, tagged with the commit they were built from. After a push whose checks fail, no new images are published.
 
 ## 12. Out of scope for later versions
 

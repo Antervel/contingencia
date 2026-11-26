@@ -242,6 +242,27 @@ sections here.
 - The GO decision applies to the prototype phase; hardening, DKIM, TLS and the admin service
   remain Epic 2 work.
 
+## CI/CD: build, test and publish images (ticket E1-13)
+
+- Implemented `.github/workflows/images.yml`: build matrix over `mta`/`imap` (temporary tag
+  `e1-13-tmp-<full-commit-hash>`), test gate, publish to GitHub Container Registry with tags
+  `<full-commit-hash>` and `latest`, image labels (source repo, commit hash, build time), pinned
+  third-party actions, PR vs `main` triggers, concurrency rules.
+- Implemented `compose.release.yaml`: release stack from registry images via `image:` entries
+  with the tag set by a single variable (`CONTINGENCY_TAG`); `webmail` placeholder until Epic 3.
+- Implemented `docs/CICD.md` covering triggers, image names/tags/labels, commit tracing, pinning,
+  re-runs and adding images.
+- Test gate (E1-13): `postfix check` (mta), Dovecot configuration check (imap), healthy state, and
+  scenario suite `prototype/tests/run-all.sh` from E1-11; failure uploads logs via artifact.
+
+### Build and test duration, final image sizes
+
+- Clean-checkout validation run (fresh clone, build, stack up, full scenario suite): **441 s**
+  (three consecutive full-suite runs before it: **~218–226 s**, **~440–443 s** each).
+- Final image sizes (uncompressed): `mta` ≈ **183 MB**, `imap` ≈ **204 MB`.
+- Live GitHub publish run: not executed from this environment (no push credentials); the workflow
+  is ready for the next push to `main`.
+
 ## Outputs
 
 Reload table and verification commands in `docs/FINDINGS.md`, evidence in `docs/evidence/E1-09/`, results for H5 and H6.

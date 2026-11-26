@@ -1,0 +1,71 @@
+# Release stack for the published container images (technical.md section 12.5, ticket E1-13).
+#
+# Unlike compose.yaml (prototype, local builds), this file starts the appliance from
+# registry images referenced through `image:`. The tag is set by a single variable so an
+# install can pin to a specific commit hash:
+#
+#   CONTINGENCY_TAG=<full-commit-hash> docker compose -f compose.release.yaml up -d
+#
+# The CI/CD pipeline (ticket E1-13) uses this file for its test gate, with
+# CONTINGENCY_TAG set to the temporary build tag used for the test run.
+
+services:
+  mta:
+    image: ghcr.io/antervel/contingencia/mta:${CONTINGENCY_TAG:-latest}
+    depends_on:
+      imap:
+        condition: service_started
+    networks:
+      - appliance
+    ports:
+      - "127.0.0.1:2525:25"
+      - "127.0.0.1:5587:587"
+    volumes:
+      - ./prototype/config:/config:ro
+      - queue:/var/spool/postfix
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/25'"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  imap:
+    image: ghcr.io/antervel/contingencia/imap:${CONTINGENCY_TAG:-latest}
+    networks:
+      - appliance
+    ports:
+      - "127.0.0.1:1143:143"
+    volumes:
+      - ./prototype/config:/config:ro
+      - mail:/var/mail/vhosts
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/143'"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  main:
+    image: axllent/mailpit:latest
+    networks:
+      - appliance
+    ports:
+      - "127.0.0.1:2526:1025"
+      - "127.0.0.1:8025:8025"
+    volumes:
+      - mailpit:/data
+    environment:
+      MP_DATABASE: /data/mailpit.db
+
+  # Webmail (upstream Roundcube) is added in Epic 3 with a pinned image. A placeholder
+  # entry is enough until then (technical.md section 12.5, ticket E1-13).
+
+volumes:
+  mail:
+  queue:
+  mailpit:
+
+networks:
+  appliance:
+    driver: bridge

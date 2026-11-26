@@ -34,6 +34,7 @@ Nothing in this epic is throwaway except the hand-written *process* of creating 
 - Authenticated submission on port 587 with sender-address enforcement and a rate limit, **without** DKIM signing.
 - How each kind of configuration change is picked up by the running services (which reload command, if any).
 - Persistence of the queue and the mail store across container restarts.
+- The CI/CD pipeline that builds, tests and publishes the `mta` and `imap` images on every push to `main` (PRD IR-8), designed so later images are added with one line.
 
 ### Out of scope (later epics)
 
@@ -76,8 +77,9 @@ The passwords are for the prototype only.
 │   │   ├── postfix/
 │   │   └── dovecot/
 │   └── tests/                   scenario scripts (ticket E1-11)
+├── .github/workflows/           image build, test and publish pipeline (ticket E1-13)
 ├── reference/                   cleaned, commented golden files (ticket E1-10)
-└── sdlc/
+└── docs/
     └── FINDINGS.md              results and decisions (ticket E1-12)
 ```
 
@@ -130,9 +132,10 @@ These are decided *in advance* so a failure leads to a quick change rather than 
 | E1-09 | Configuration reload behavior | M | E1-06, E1-08 |
 | E1-10 | Reference ("golden") configuration files and format spec | M | E1-06, E1-08, E1-09 |
 | E1-11 | Automated scenario test script | M | E1-05 (grows with each ticket) |
-| E1-12 | Findings report and go/no-go | S | all above |
+| E1-12 | Findings report and go/no-go | S | all other tickets |
+| E1-13 | CI/CD: build, test and publish images on push to `main` | M | E1-04 (test gate finished after E1-11) |
 
-Suggested order of work: 01, 02, 03, 04, 05, then 06, 07 and 08 in any order, then 09, 10, 11 (started early, finished last), and 12.
+Suggested order of work: 01, 02, 03, 04, 05, then 06, 07 and 08 in any order, then 09, 10, 11 (started early, finished last), 13 (started after 04, its test gate finished after 11), and 12 last.
 
 Sizes: S = about half a day, M = about one day, L = one to two days. These are rough, for planning only.
 
@@ -141,11 +144,12 @@ Sizes: S = about half a day, M = about one day, L = one to two days. These are r
 The epic is complete when **all** of these are true:
 
 1. `docker compose up` brings up `mta`, `imap` and the fake `main` from a clean checkout, with no manual steps beyond creating the config files that are already in the repository.
-2. Every hypothesis H1 to H10 has a result recorded in `sdlc/FINDINGS.md`, with evidence (command output or log lines).
+2. Every hypothesis H1 to H10 has a result recorded in `docs/FINDINGS.md`, with evidence (command output or log lines).
 3. The automated test script runs every scenario from tickets E1-05 to E1-09 and passes.
 4. The `reference/` folder contains commented example files for every generated file type, plus the format specification that tells the Rust admin service author exactly how to produce them from state.
 5. Every fallback that was triggered has been applied, and `technical.md` has been updated so it matches what actually works (every **(verify)** marker either resolved or turned into a documented fact).
 6. A go/no-go decision for starting Epic 2 is recorded.
+7. A push to `main` builds, tests and publishes the `mta` and `imap` images automatically, tagged with the commit hash; a pull request publishes nothing; and a failing test blocks publication (ticket E1-13).
 
 ## 9. Risks specific to this epic
 
@@ -157,6 +161,6 @@ The epic is complete when **all** of these are true:
 ## 10. Conventions for all tickets
 
 - Work on a branch per ticket. Commit configuration files with explanatory comments inside them.
-- Every ticket ends by updating `sdlc/FINDINGS.md` with its results, even when it passes.
+- Every ticket ends by updating `docs/FINDINGS.md` with its results, even when it passes.
 - Record every command used to test, in the ticket's "How to test" section, so someone else can repeat it.
 - When something fails, save the log lines that show why before changing anything.

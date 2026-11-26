@@ -39,6 +39,12 @@ services:
     volumes:
       - ./prototype/config:/config:ro
       - mail:/var/mail/vhosts
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/143'"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   main:
     image: axllent/mailpit:latest

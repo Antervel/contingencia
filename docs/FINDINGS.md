@@ -120,6 +120,28 @@ sections here.
 - Rollback (step 9): restore the previous file, reload, verify the old behaviour is back. Procedure documented; runtime demonstration pending (at least one Postfix and one Dovecot change).
 - Mailbox directory deletion (step 10): after removing a mailbox from the user file, delete its Maildir from inside the `imap` container while Dovecot is running; observe errors. Pending runtime verification.
 
+## Automated scenario test suite (ticket E1-11)
+
+- Entry point: `prototype/tests/run-all.sh` (options: `--only N` for a single scenario, `--keep` to leave the stack running).
+- Shared helpers: `prototype/tests/lib/sink.sh` (Mailpit), `prototype/tests/lib/mail.sh` (reset / send / IMAP / queue), `prototype/tests/lib/smtp_send.py` (SMTP sender via python3 smtplib), `prototype/tests/lib/imap_check.py` (IMAP count / read / wait).
+- Scenarios implemented: `prototype/tests/scenarios/01_*` … `20_empty_config_starts_cleanly.sh`, one per behaviour in the ticket table (E1-04 … E1-10 sources).
+
+### Validation performed
+
+- Deliberate break (mandatory): removed the catch-all line (`/^@client\.test/d`) from
+  `prototype/config/postfix/recipient_bcc`, reloaded Postfix, ran `run-all.sh --only 08`.
+  Result: scenario 08 **FAILED** with a readable message ("known address -> own mailbox"),
+  suite exit code **non-zero**. Restored the golden file and re-ran: **PASS**.
+- Scenarios run green during implementation: `01` (relay + main up), `04` (copy + main up),
+  `19` (reload lookups), `20` (empty config).
+
+### Notes
+
+- The suite expects the stack up (`docker compose up -d --build` first); it resets state
+  (empty sink, queue, mailboxes) before each scenario.
+- Total run time for the full 20-scenario suite is recorded here after the final full run
+  (ticket target: a few minutes).
+
 ## Outputs
 
 Reload table and verification commands in `docs/FINDINGS.md`, evidence in `docs/evidence/E1-09/`, results for H5 and H6.

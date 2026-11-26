@@ -51,8 +51,8 @@ smtpd_sasl_path = inet:imap:12345
 smtpd_sasl_security_options = noanonymous
 
 # Sender login enforcement (ticket E1-08, hypothesis H9): sender -> login map,
-# enforced on the submission service via check_sender_login_mismatch (master.cf).
-sender_login_maps = texthash:/config/postfix/sender_login
+# enforced on the submission service via reject_sender_login_mismatch (master.cf).
+smtpd_sender_login_maps = texthash:/config/postfix/sender_login
 
 # Rate limit window (ticket E1-08): one second per anvil rate time unit, so the
 # submission service rate limit of 1 message per second is expressed in seconds.

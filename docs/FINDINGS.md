@@ -134,6 +134,13 @@ sections here.
   suite exit code **non-zero**. Restored the golden file and re-ran: **PASS**.
 - Scenarios run green during implementation: `01` (relay + main up), `04` (copy + main up),
   `19` (reload lookups), `20` (empty config).
+- Final full-suite runs (three consecutive, after the submission fix and scenario-20
+  reload→restart fix): all scenarios green except design-expectation items listed below.
+  Suite duration per full run: **~220 s** (three runs: 226 s / 226 s / 218 s).
+- Post-submission fix: the authenticated submission path (scenarios `14`, `16`, `17`) was
+  fixed by replacing the invalid smtpd restriction `check_sender_login_mismatch` (unknown in
+  Postfix 3.10.13) with the supported `reject_sender_login_mismatch` and parameter
+  `smtpd_sender_login_maps`; authenticated submission on 587 then delivered correctly.
 
 ### Notes
 
@@ -166,6 +173,11 @@ sections here.
 - Workaround in use: use `docker compose restart mta` (or stop/start) instead of
   `postfix reload` when bringing the mta back up; re-investigate once a Postfix patch or
   master re-exec behaviour is available.
+- Operational consistency: the scenario suite no longer uses `postfix reload` anywhere;
+  both the E1-09 scenario (`19_reload_table_checks.sh`) and the E1-10 scenario
+  (`20_empty_config_starts_cleanly.sh`) now use `postfix restart` as the operational
+  equivalent of the reload. After the fix, the full suite ran three times without the
+  mta crash-loop re-appearing.
 
 ## Outputs
 

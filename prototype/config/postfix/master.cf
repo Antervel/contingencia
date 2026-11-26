@@ -23,7 +23,8 @@ submission inet n       -       y       -       -       smtpd
   -o smtpd_sasl_security_options=noanonymous
   -o smtpd_relay_restrictions=permit_sasl_authenticated,reject
   -o smtpd_recipient_restrictions=permit_sasl_authenticated,reject
-  -o smtpd_sender_restrictions=check_sender_login_mismatch
+  -o smtpd_sender_restrictions=reject_sender_login_mismatch
+  -o smtpd_sender_login_maps=texthash:/config/postfix/sender_login
   -o smtpd_client_message_rate_limit=1
   -o milter_macro_daemon_name=ORIGINATING
   # DKIM (Epic 2): add the milter option here, e.g.: -o smtpd_milters=inet:inet.dns

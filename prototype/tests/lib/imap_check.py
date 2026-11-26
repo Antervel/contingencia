@@ -41,10 +41,12 @@ def read_message(m, mailbox: str) -> bytes:
         return b""
     typ, msg_data = m.fetch(ids[-1], "(RFC822)")
     raw = b""
-    for response in msg_data:
-        if response[0] == "OK":
-            for num, payload in response[1]:
+    for item in msg_data:
+        if isinstance(item, tuple) and len(item) >= 2:
+            status_rid, payload = item[0], item[1]
+            if isinstance(status_rid, bytes) and status_rid.startswith(b"1 "):
                 raw = payload if isinstance(payload, bytes) else payload.encode()
+                break
     return raw
 
 

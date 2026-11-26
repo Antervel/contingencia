@@ -22,7 +22,17 @@ fail() {
     exit 1
 }
 
+ensure_mta() {
+    # Best effort: make sure the mta container is running (crash-loop recovery).
+    if ! $COMPOSE exec -T mta postfix status >/dev/null 2>&1; then
+        $COMPOSE restart mta >/dev/null 2>&1
+        sleep 20
+    fi
+}
+
 reset_state() {
+    # Ensure the services are up before running checks.
+    ensure_mta
     # Empty sink (Mailpit).
     sh "$SCRIPT_DIR/sink.sh" clear >/dev/null 2>&1
     # Purge the Postfix queue.

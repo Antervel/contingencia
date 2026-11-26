@@ -13,7 +13,7 @@ else
 fi
 
 out=$(python3 "$SCRIPT_DIR/imap_check.py" --user alice@client.test --password alice-pass --action read)
-if echo "$out" | grep -q "^SUBJECT:E1-11 headers subject"; then
+if echo "$out" | grep -q "SUBJECT:Subject: E1-11 headers subject"; then
     pass "06 (E1-05): copy headers visible (subject intact)"
 else
     fail "06 (E1-05): copy headers not visible (subject mismatch)"

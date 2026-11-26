@@ -16,7 +16,8 @@ else
 fi
 
 $COMPOSE stop mta >/dev/null 2>&1
-sleep 5
+$COMPOSE start mta >/dev/null 2>&1
+sleep 12
 c2=$(queue_pending_count)
 if [ "$c2" -gt 0 ]; then
     pass "13 (E1-07): queue survived mta restart"

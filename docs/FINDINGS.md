@@ -179,6 +179,64 @@ sections here.
   equivalent of the reload. After the fix, the full suite ran three times without the
   mta crash-loop re-appearing.
 
+## Findings report and go/no-go (ticket E1-12)
+
+### Final hypothesis outcomes (consolidated)
+
+- H1 (copy rule): **PASS** — relayed originals and BCC copies both delivered as designed
+  (scenarios E1-05 `04`, `05` green; E1-11 suite).
+- H2 (never-routed internal domain): **PASS** — `copies.invalid` accepted as a virtual mailbox
+  domain and delivered over LMTP (E1-04, E1-05).
+- H3 (`^` delivery separator): **CHANGED** — `^`-based internal delivery names were unresolvable
+  through the Dovecot userdb; the design now uses `<mailbox>@<L>` names
+  (e.g. `alice@copies.invalid`, `_catchall@copies.invalid`) as implemented in E1-10.
+- H4 (catch-all precedence): **PASS** — exact BCC entries take precedence over the `@domain`
+  catch-all (scenario E1-06 `08` green).
+- H5 (texthash tables): **PASS** — `texthash:` readable via lookups; the reload *mechanism*
+  (`postfix reload`) turned out to be broken in the prototype environment (see reload segfault),
+  so the minimal reload command is now the restart-based workflow.
+- H6 (Dovecot passwd-file pickup): **PENDING** — minimal reload command and verification
+  behaviour for the user/auth tables still to be recorded from the runtime (E1-09 reload table).
+- H7 (two-name-one-mailbox): **PASS** — with the `<mailbox>@<L>` naming, one Maildir answers to
+  both the login name and the delivery name (E1-05, E1-10 scenarios green).
+- H8 (outage / queue / restart): **PASS** — queued originals delivered unmodified when `main`
+  returned; queue survives `mta` restart (scenarios E1-07 `02`, `05`, `12`, `13` green).
+- H9 (submission): **PASS** — after replacing the invalid smtpd restriction
+  (`check_sender_login_mismatch` → `reject_sender_login_mismatch` plus
+  `smtpd_sender_login_maps = texthash:/config/postfix/sender_login`), authenticated submission
+  on 587 works end to end (scenario E1-08 `14` green, enforcement in `16`, rate limit in `17`,
+  wrong password in `15`, port-25 isolation in `18`); the fix itself was mandatory because the
+  original setting made smtpd defer every submission RCPT with `451 4.3.5 Server configuration error`.
+- H10 (recipient policy): **PARTIAL** — accept-any mode works (scenarios E1-06 `09`, `10` and
+  E1-08 `18` green); listed-only mode is **not yet enforced** (scenario E1-06 `11` still fails:
+  unlisted relay recipient was still relayed). Design decision pending.
+
+### Final scenario-suite status (E1-11)
+
+- Full suite (`prototype/tests/run-all.sh`) run three times after all fixes: runs lasted
+  ~218–226 s each; three consecutive post-fix runs kept the stack healthy.
+- Green scenarios: `01`–`06`, `08`–`14`, `15`, `16`, `17`, `18`, `19`, `20` (with `07`/`11`
+  failing on the design-expectation items above).
+- Deliberate break (catch-all removal) verified failing then passing (scenario `08`).
+- Remaining known failures: scenario `07` (internal address not injectable) and scenario `11`
+  (listed-only relay recipient refused) — both design-expectation items with follow-ups.
+
+### Operational findings (cross-ticket)
+
+- Postfix master reload (`postfix reload`) in the `mta` container segfaults the master
+  (SIGSEGV, exit 139) in this environment (Postfix from Debian 13 "Trixie", Postfix 3.10.13);
+  the reload handler / re-init path is the culprit, independent of loaded configuration content.
+  Workaround: use `postfix restart` (scenarios `19` and `20` now do so).
+
+### Decision (E1-12)
+
+- **GO** for the E1 prototype epic as delivered, with the following carry-forward items:
+  - implement listed-only recipient enforcement (H10 / scenario `11`);
+  - settle the internal-injection expectation (scenario `07`);
+  - close H6 (Dovecot reload behaviour) and re-verify E1-09 reload table entries.
+- The GO decision applies to the prototype phase; hardening, DKIM, TLS and the admin service
+  remain Epic 2 work.
+
 ## Outputs
 
 Reload table and verification commands in `docs/FINDINGS.md`, evidence in `docs/evidence/E1-09/`, results for H5 and H6.

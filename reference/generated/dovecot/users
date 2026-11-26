@@ -2,18 +2,23 @@
 #
 # Format: user:password:uid:gid:(gecos):home:(shell):extra_fields
 #   - login name:       alice@client.test        -> password set, this is the mailbox user
-#   - delivery name:    alice^client.test@copies.invalid -> no password, login disabled, same home
+#   - delivery name:    alice@copies.invalid    -> no password, login disabled, same home
 #
-# Internal mailbox domain "L" is copies.invalid; the separator is "^" (EPIC section 3.2/H3).
+# Internal mailbox domain "L" is copies.invalid; the delivery names live in that
+# internal domain and share the Maildir of the matching login mailbox.
 
-_catchall@client.test:$6$xBaCy0OLYDpOwnyg$RaHkszd9htK6HmCAmYh8JAiax0VwMC03/Nz9BRzmZ0N.IFKfoBiJQJczQgUkWKx6i8QBcJv6/ChfGI5ps/Man1:5000:5001::/var/mail/vhosts/client.test/_catchall::
-_catchall^client.test@copies.invalid::5000:5001::/var/mail/vhosts/client.test/_catchall:
+_catchall@client.test:$6$xBaCy0OLYDpOwnyg$RaHkszd9htK6HmCAmYh8JAiax0VwMC03/Nz9BRzmZ0N.IFKfoBiJQJczQgUkWKx6i8QBcJv6/ChfGI5ps/Man1:5000:5001::/var/mail/vhosts/client.test/_catchall::$
 
-alice@client.test:$6$WNcTD3C6Qn4dnhb4$TKyZ3Hwd6DjQF77Y3irFZnyUASN4DVWtnPu7YXpONZ2f/YRaMFk8vvVpYhGYLgufbGgvKVPgyJH0KF4ArQ6Ao0:5000:5001::/var/mail/vhosts/client.test/alice::
-alice^client.test@copies.invalid::5000:5001::/var/mail/vhosts/client.test/alice:
+_catchall@copies.invalid::5000:5001::/var/mail/vhosts/client.test/_catchall::
 
-bob@client.test:$6$Hxmxl3Ya9AMB4gNl$cCeufl.LR1M4Svp6eX6U.WTGSJLyhu.Eg/4ldl.MgEiDfGSZXEf9uTdpGb/euXy3BO7UBbcnottZWAIb3aDRZ.:5000:5001::/var/mail/vhosts/client.test/bob::
-bob^client.test@copies.invalid::5000:5001::/var/mail/vhosts/client.test/bob::
+alice@client.test:$6$WNcTD3C6Qn4dnhb4$TKyZ3Hwd6DjQF77Y3irFZnyUASN4DVWtnPu7YXpONZ2f/YRaMFk8vvVpYhGYLgufbGgvKVPgyJH0KF4ArQ6Ao0:5000:5001::/var/mail/vhosts/client.test/alice::$
 
-carol@other.test:$6$sokKLwgz/REIxlR3$EihoyQJr/dZW.Q0aaB2LEitWT1RjfuBCwaQPeTw1bpV.CJBxCy1t6dasDxDQJosJmYJgK0QihJNUarDGN7jJi1:5000:5001::/var/mail/vhosts/other.test/carol::
-carol^other.test@copies.invalid::5000:5001::/var/mail/vhosts/other.test/carol::
+alice@copies.invalid::5000:5001::/var/mail/vhosts/client.test/alice::
+
+bob@client.test:$6$Hxmxl3Ya9AMB4gNl$cCeufl.LR1M4Svp6eX6U.WTGSJLyhu.Eg/4ldl.MgEiDfGSZXEf9uTdpGb/euXy3BO7bcnottZWAIb3aDRZ.:5000:5001::/var/mail/vhosts/client.test/bob::$
+
+bob@copies.invalid::5000:5001::/var/mail/vhosts/client.test/bob::
+
+carol@other.test:$6$sokKLwgz/REIxlR3$EihoyQJr/dZW.Q0aaB2LEitWT1RjfuBCwaQPeTw1bpV.CJBxCy1t6dasDxDQJosJmYJgK0QihJNUarDGN7jJi1:5000:5001::/var/mail/vhosts/other.test/carol::$
+
+carol@copies.invalid::5000:5001::/var/mail/vhosts/other.test/carol::

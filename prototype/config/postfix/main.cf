@@ -1,7 +1,7 @@
 # Baseline prototype Postfix configuration (hand-written, ticket E1-04).
 #
 # Backup mail server behaviour: accept mail for the client domains and relay
-# it to the fake main sink (Mailpit) at [main]:25, no MX lookup, no copies yet
+# it to the fake main sink (Mailpit) at [main]:1025, no MX lookup, no copies yet
 # (the copy rule is ticket E1-05).
 
 myhostname = backup.client.test

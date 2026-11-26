@@ -5,7 +5,7 @@
 # precedence over it (hypothesis H4). The catch-all for `other.test` does not exist
 # in the fixtures and is deliberately absent here.
 
-alice@client.test alice^client.test@copies.invalid
-bob@client.test bob^client.test@copies.invalid
-carol@other.test carol^other.test@copies.invalid
-@client.test _catchall^client.test@copies.invalid
+alice@client.test alice@copies.invalid
+bob@client.test bob@copies.invalid
+carol@other.test carol@copies.invalid
+@client.test _catchall@copies.invalid

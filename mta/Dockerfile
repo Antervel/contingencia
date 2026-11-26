@@ -11,4 +11,4 @@ COPY prototype/config/postfix/master.cf /etc/postfix/master.cf
 
 EXPOSE 25
 
-CMD ["postfix", "start"]
+CMD ["/usr/lib/postfix/sbin/master"]

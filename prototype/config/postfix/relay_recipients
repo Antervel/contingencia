@@ -1,10 +1,10 @@
-# Relay recipient policy for the prototype (ticket E1-06, hypothesis H10).
+# Relay recipient policy for the prototype (ticket E1-10).
 #
 # Addresses allowed to relay mail while the "listed addresses only" policy is
 # active (EPIC FR-3). In accept-any mode this table is not used and the relay
 # domains are sufficient.
 
+_catchall@client.test
 alice@client.test
 bob@client.test
 carol@other.test
-_catchall@client.test

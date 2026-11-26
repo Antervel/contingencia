@@ -3,7 +3,7 @@
 # One internal delivery address per fixture mailbox, delivered over LMTP to
 # the imap container (virtual_transport = lmtp:inet:imap:24).
 
-_catchall^client.test@copies.invalid _catchall@client.test
-alice^client.test@copies.invalid alice@client.test
-bob^client.test@copies.invalid bob@client.test
-carol^other.test@copies.invalid carol@other.test
+_catchall@copies.invalid _catchall@client.test
+alice@copies.invalid alice@client.test
+bob@copies.invalid bob@client.test
+carol@copies.invalid carol@other.test

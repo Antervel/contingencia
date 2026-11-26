@@ -1,8 +1,8 @@
-# Transport map for the prototype (ticket E1-04).
+# Transport map for the prototype (ticket E1-10).
 #
-# Relay every relay domain to the fake main sink at [main]:25 (square brackets:
+# Relay every relay domain to the fake main sink at [main]:1025 (square brackets:
 # no MX lookup, so mail cannot loop back to the appliance).
 
-client.test    relay:[main]:25
-other.test     relay:[main]:25
-outside.test   relay:[main]:25
+client.test relay:[main]:1025
+other.test relay:[main]:1025
+outside.test relay:[main]:1025

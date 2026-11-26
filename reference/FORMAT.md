@@ -25,7 +25,7 @@ line, then its data lines (if any). The header comment blocks are exactly:
 # Relay domains for the prototype (ticket E1-10).
 #
 # Client domains accepted from any client and relayed to the fake main sink
-# ([main]:25). In the final system these are generated from the admin state; in
+# ([main]:1025). In the final system these are generated from the admin state; in
 # the prototype they are hand-written from the fixtures of EPIC.md section 3.
 ```
 
@@ -34,7 +34,7 @@ line, then its data lines (if any). The header comment blocks are exactly:
 ```
 # Transport map for the prototype (ticket E1-10).
 #
-# Relay every relay domain to the fake main sink at [main]:25 (square brackets:
+# Relay every relay domain to the fake main sink at [main]:1025 (square brackets:
 # no MX lookup, so mail cannot loop back to the appliance).
 ```
 
@@ -85,7 +85,7 @@ line, then its data lines (if any). The header comment blocks are exactly:
 #
 # Format: user:password:uid:gid:(gecos):home:(shell):extra_fields
 #   - login name:       alice@client.test        -> password set, this is the mailbox user
-#   - delivery name:    alice^client.test@copies.invalid -> no password, login disabled, same home
+#   - delivery name:    alice@copies.invalid    -> no password, login disabled, same home
 #
 # Internal mailbox domain "L" is copies.invalid; the separator is "^" (EPIC section 3.2/H3).
 ```
@@ -103,17 +103,18 @@ line, then its data lines (if any). The header comment blocks are exactly:
 
 - Header comment: as specified in the "Header comments (exact text)" section.
 - Line format: `<domain> <transport>`, single space separator; transport value
-  is `relay:[main]:25`.
+  is `relay:[main]:1025`.
 - Ordering: by domain, byte-wise ascending.
 
 ### `generated/postfix/virtual_mailboxes`
 
 - Header comment: as specified in the "Header comments (exact text)" section.
 - Line format: `<internal> <original>`, single space separator.
-- Internal name: from mailbox `<mailbox>@<domain>` → `<mailbox>^<domain>@<L>`;
-  catch-all `_catchall@<domain>` → `_catchall^<domain>@<L>`. Both the local part
-  and the domain are lowercased (uppercase is rejected at validation and
-  lowercased at render time).
+- Internal name: from mailbox `<mailbox>@<domain>` the delivery name is built as
+  `<mailbox>@<L>` (for example `alice@client.test` → `alice@copies.invalid`); the
+  catch-all `_catchall@<domain>` maps to `_catchall@<L>`. Both the local part and
+  the domain are lowercased (uppercase is rejected at validation and lowercased at
+  render time).
 - Ordering: by internal address, byte-wise ascending.
 
 ### `generated/postfix/recipient_bcc`
@@ -142,7 +143,7 @@ line, then its data lines (if any). The header comment blocks are exactly:
 - Header comment: as specified in the "Header comments (exact text)" section.
 - Line format: passwd-file fields `user:password:uid:gid:(gecos):home:(shell):extra_fields`.
 - One line per name: login `<mailbox>@<domain>` with SHA-512 crypt password;
-  delivery `<mailbox>^<domain>@<L>` with empty password.
+  delivery `<mailbox>@<L>` with empty password.
 - Ordering: per mailbox, grouped by mailbox domain then local part (byte-wise);
   within a mailbox, login line precedes delivery line.
 

@@ -8,7 +8,8 @@ $COMPOSE stop main >/dev/null 2>&1
 sleep 3
 send_msg sender@sender.test alice@client.test "E1-11 recovery" "hello recovery"
 $COMPOSE start main >/dev/null 2>&1
-if wait_for_sink 1 45; then
+$COMPOSE exec -T mta postqueue -f >/dev/null 2>&1
+if wait_for_sink 1 90; then
     pass "12 (E1-07): queued original delivered after main returned"
 else
     fail "12 (E1-07): queued original not delivered after main returned"

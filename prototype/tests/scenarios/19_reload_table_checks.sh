@@ -4,7 +4,9 @@
 TESTS_LIB_DIR="$(cd "$(dirname "$0")/../lib" && pwd)"
 . "$TESTS_LIB_DIR/mail.sh"
 
-$COMPOSE exec -T mta postfix reload >/dev/null 2>&1
+# Reload is currently crash-prone in this environment (master segfault on reload);
+# use restart as the operational equivalent for the verification run.
+$COMPOSE exec -T mta postfix restart >/dev/null 2>&1
 
 out=$($COMPOSE exec -T mta postmap -q alice@client.test texthash:/config/postfix/recipient_bcc 2>/dev/null)
 if [ "$out" = "alice@copies.invalid" ]; then

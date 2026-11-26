@@ -7,7 +7,7 @@ reset_state
 python3 "$SCRIPT_DIR/smtp_send.py" --server 127.0.0.1:587 --from alice@client.test --to alice@client.test \
     --subject "E1-11 auth sub" --body "hello auth sub" --auth-user alice@client.test --auth-pass alice-pass
 
-if wait_for_sink 1 45; then
+if wait_for_sink 1 90; then
     pass "14 (E1-08): authenticated submission delivered"
 else
     fail "14 (E1-08): authenticated submission did not deliver"

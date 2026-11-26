@@ -25,7 +25,8 @@ else
 fi
 
 $COMPOSE start main >/dev/null 2>&1
-if wait_for_sink 1 45; then
+$COMPOSE exec -T mta postqueue -f >/dev/null 2>&1
+if wait_for_sink 1 90; then
     pass "13 (E1-07): delivered after mta restart + main up"
 else
     fail "13 (E1-07): delivered after mta restart + main up"

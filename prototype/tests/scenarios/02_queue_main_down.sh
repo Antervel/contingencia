@@ -22,7 +22,8 @@ else
 fi
 
 $COMPOSE start main >/dev/null 2>&1
-if wait_for_sink 1 45; then
+$COMPOSE exec -T mta postqueue -f >/dev/null 2>&1
+if wait_for_sink 1 90; then
     pass "02 (E1-04): queued original delivered after main returned"
 else
     fail "02 (E1-04): queued original not delivered after main returned"

@@ -1,0 +1,13 @@
+# Recipient access map (ticket E1-12: internal injection fix).
+#
+# Internal mailbox delivery domain (copies.invalid): not injectable from
+# unauthenticated SMTP clients (port 25 / open relay). BCC-generated copies are
+# added by the cleanup daemon and are not subject to smtpd recipient checks, so
+# the legitimate internal delivery path (relay -> BCC -> LMTP) keeps working.
+#
+# Keys are full delivery addresses (<mailbox>@<L>) as produced by the generated
+# recipient_bcc / virtual delivery names (ticket E1-10).
+
+alice@copies.invalid   REJECT
+_bcatchall@copies.invalid   REJECT
+copies.invalid   REJECT

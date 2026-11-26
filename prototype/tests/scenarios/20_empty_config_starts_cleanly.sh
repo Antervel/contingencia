@@ -25,8 +25,10 @@ cp "$REPO_ROOT/reference/generated/postfix/recipient_bcc" "$REPO_ROOT/prototype/
 cp "$REPO_ROOT/reference/generated/postfix/relay_recipients" "$REPO_ROOT/prototype/config/postfix/relay_recipients"
 cp "$REPO_ROOT/reference/generated/postfix/sender_login" "$REPO_ROOT/prototype/config/postfix/sender_login"
 cp "$REPO_ROOT/reference/generated/dovecot/users" "$REPO_ROOT/prototype/config/dovecot/users"
-# Use restart, not reload: master reload is currently crash-prone in this environment.
-$COMPOSE exec -T mta postfix restart >/dev/null 2>&1
+# Use a full container restart, not reload: master reload is currently crash-prone in
+# this environment (master segfault on reload); a container restart is the operational
+# equivalent for picking up configuration changes.
+$COMPOSE restart mta >/dev/null 2>&1
 
 if [ "$check1" = "1" ]; then
     pass "20 (E1-10): postfix check passes with empty tables"

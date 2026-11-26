@@ -207,19 +207,23 @@ sections here.
   on 587 works end to end (scenario E1-08 `14` green, enforcement in `16`, rate limit in `17`,
   wrong password in `15`, port-25 isolation in `18`); the fix itself was mandatory because the
   original setting made smtpd defer every submission RCPT with `451 4.3.5 Server configuration error`.
-- H10 (recipient policy): **PARTIAL** — accept-any mode works (scenarios E1-06 `09`, `10` and
-  E1-08 `18` green); listed-only mode is **not yet enforced** (scenario E1-06 `11` still fails:
-  unlisted relay recipient was still relayed). Design decision pending.
+- H10 (recipient policy): **PASS** — accept-any mode works (scenarios E1-06 `09`, `10` and
+  E1-08 `18` green); listed-only mode is now enforced and verified (scenario E1-06 `11` green):
+  the unlisted relay recipient was refused with `554` through
+  `smtpd_relay_restrictions = reject_unlisted_recipient, reject_unauth_destination` plus the
+  generated `relay_recipient_maps` lookup.
 
-### Final scenario-suite status (E1-11)
+### Final scenario-suite status (E1-11, updated after E1-12 carry-forward fixes)
 
-- Full suite (`prototype/tests/run-all.sh`) run three times after all fixes: runs lasted
-  ~218–226 s each; three consecutive post-fix runs kept the stack healthy.
-- Green scenarios: `01`–`06`, `08`–`14`, `15`, `16`, `17`, `18`, `19`, `20` (with `07`/`11`
-  failing on the design-expectation items above).
+- Full suite (`prototype/tests/run-all.sh`): **ALL SCENARIOS PASSED** in three consecutive runs
+  (full runs at ~440–443 s each) after fixing the internal-injection block (scenario `07`) and
+  the listed-only enforcement (scenario `11`).
+- Clean-checkout run (fresh clone, `docker compose up -d --build`, `prototype/tests/run-all.sh`):
+  **ALL SCENARIOS PASSED** in **441 s**.
 - Deliberate break (catch-all removal) verified failing then passing (scenario `08`).
-- Remaining known failures: scenario `07` (internal address not injectable) and scenario `11`
-  (listed-only relay recipient refused) — both design-expectation items with follow-ups.
+- Internal injection (scenario `07`): fixed via generated `recipient_access` map keyed on full
+  delivery addresses (`<mailbox>@<L>`) checked through `smtpd_recipient_restrictions`.
+- Listed-only (scenario `11`): fixed via `reject_unlisted_recipient` + `reject_unauth_destination`.
 
 ### Operational findings (cross-ticket)
 
@@ -228,12 +232,13 @@ sections here.
   the reload handler / re-init path is the culprit, independent of loaded configuration content.
   Workaround: use `postfix restart` (scenarios `19` and `20` now do so).
 
-### Decision (E1-12)
+### Decision (E1-12, updated after E1-12 carry-forward fixes)
 
-- **GO** for the E1 prototype epic as delivered, with the following carry-forward items:
-  - implement listed-only recipient enforcement (H10 / scenario `11`);
-  - settle the internal-injection expectation (scenario `07`);
-  - close H6 (Dovecot reload behaviour) and re-verify E1-09 reload table entries.
+- **GO** for the E1 prototype epic as delivered; the E1-12 carry-forwards were subsequently
+  implemented and verified during the final E1-12 follow-up:
+  - listed-only recipient enforcement (H10 / scenario `11`): **fixed and green**;
+  - internal-injection expectation (scenario `07`): **fixed and green**;
+  - close H6 (Dovecot reload behaviour) and re-verify E1-09 reload table entries: **still open**.
 - The GO decision applies to the prototype phase; hardening, DKIM, TLS and the admin service
   remain Epic 2 work.
 

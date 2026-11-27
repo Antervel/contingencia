@@ -301,16 +301,20 @@ sections here.
   name. A new step asserts that the running `mta`/`imap` containers use the freshly built image IDs,
   so the gate cannot silently test a cached image. Failure diagnostics now include `compose ps`,
   `compose images`, `postqueue -j`, `mailq` and all container logs.
-- Verification: the full suite passes locally both on the prototype stack and on the release stack
-  with the same environment the workflow uses; the CI run on the fixed commit is the final check.
+- Verification: the full suite passes locally twice in a row on the release stack with the same
+  environment the workflow uses, and the CI run on `b3c047b` passed
+  (`RESULT: ALL SCENARIOS PASSED`) and published both images.
 
 ### Build and test duration, final image sizes
 
 - Clean-checkout validation run (fresh clone, build, stack up, full scenario suite): **441 s**
   (three consecutive full-suite runs before it: **~218–226 s**, **~440–443 s** each).
 - Final image sizes (uncompressed): `mta` ≈ **183 MB**, `imap` ≈ **204 MB`.
-- Live GitHub publish run: not executed from this environment (no push credentials); the workflow
-  is ready for the next push to `main`.
+- Live GitHub Actions run on `main` (`b3c047b`, run
+  [#45975180257](https://github.com/Antervel/contingencia/actions/runs/45975180257)): **success**.
+  Build ≈ 42 s, test (stack + full scenario suite) ≈ 4 min 53 s, publish ≈ 22 s; total ≈ 6 min.
+  Published tags verified in the registry: `mta` and `imap` at both
+  `b3c047bbc8b60ee8cc40d3ad1c64b816a6bf8266` and `latest`.
 
 ## Outputs
 

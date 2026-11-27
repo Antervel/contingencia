@@ -255,6 +255,24 @@ sections here.
 - Test gate (E1-13): `postfix check` (mta), Dovecot configuration check (imap), healthy state, and
   scenario suite `prototype/tests/run-all.sh` from E1-11; failure uploads logs via artifact.
 
+### Fresh-container startup failure in the CI test gate (E1-13, resolved)
+
+- Symptom: the E1-13 test gate failed at `docker compose -f compose.release.yaml up -d --wait` on
+  a clean CI runner: the freshly created `mta` container exited (code 1) while `imap` and `main`
+  reached the healthy state; retrying the stack start did not help.
+- Root cause: the `mta` image started the Postfix master binary directly
+  (`CMD ["/usr/lib/postfix/sbin/master"]`), which is not the container-ready foreground startup
+  required by the design (technical.md E1-04: "Run Postfix in the foreground as the container's main
+  process"). With the freshly built image the master process failed during startup and the container
+  went down before it could reach the healthy state.
+- Fix: `mta/Dockerfile` now starts Postfix the container-recommended way - `CMD
+  ["/usr/sbin/postfix", "start-fg"]` (Postfix 3.3+ keeps `master(8)` in the foreground as the
+  container's main process) - and configures `maillog_file = /dev/stdout` (Postfix 3.4+ `postlog
+  unix-dgram` service) so the daemon logs to the container's stdout/stderr instead of relying on a
+  syslog daemon that is not present in the image.
+- Verification: with the rebuilt image the release stack reaches a healthy `mta` state and the full
+  scenario suite passes (`ALL SCENARIOS PASSED`); the CI test gate was re-run afterwards.
+
 ### Build and test duration, final image sizes
 
 - Clean-checkout validation run (fresh clone, build, stack up, full scenario suite): **441 s**

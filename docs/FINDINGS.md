@@ -271,7 +271,38 @@ sections here.
   unix-dgram` service) so the daemon logs to the container's stdout/stderr instead of relying on a
   syslog daemon that is not present in the image.
 - Verification: with the rebuilt image the release stack reaches a healthy `mta` state and the full
-  scenario suite passes (`ALL SCENARIOS PASSED`); the CI test gate was re-run afterwards.
+  scenario suite passes (`ALL SCENARIOS PASSED`).
+
+### Scenario-suite failures on the CI runner (E1-13, resolved)
+
+- Symptom: after the startup fix the gate reached the scenario suite but failed 8 scenarios (02, 04,
+  05, 09, 10, 13, 14, 18) on the runner, while the same image passed locally. The MTA logs showed
+  deliveries deferred with `Host or domain name not found ... name=main`, i.e. `main` was down.
+- Root cause 1 (the first failure): `queue_pending_count` in `prototype/tests/lib/mail.sh` parsed
+  `mailq` with a fixed-width regex (`^[A-F0-9]{10}`). Postfix queue IDs are not fixed-width: they
+  were 10 characters on the local filesystem and 11 on the runner (`18DF07E7300`). The count was
+  therefore always 0 on CI and scenario 02 failed its "original queued while main down" check.
+- Root cause 2 (the cascade): scenario 02 stops `main`, and `fail()` exits immediately, before the
+  scenario restarts it. Every later scenario that needs `main` then failed as well (04, 05, 09, 10,
+  13, 14, 18), which is why one real bug looked like eight.
+- Root cause 3 (a race found while re-validating on the release stack): several scenarios sampled
+  the queue once, immediately after the sink received the message. Postfix keeps the message in the
+  active queue until `qmgr` removes it (about one second in the logs), so a single read is flaky.
+  The suite now polls with `wait_for_queue_at_least` / `wait_for_queue_empty` and bounded timeouts.
+- Fix (tests): `queue_pending_count` now counts `postqueue -j` records (`"queue_id"`), independent
+  of the queue-ID format. `reset_state` and the suite runner call `ensure_services`, which starts
+  every service and waits for the sink API before each scenario, so a failure can no longer leak a
+  stopped service into later scenarios. `ensure_mta` polls `postfix status` instead of a single
+  check followed by a long fixed sleep.
+- Fix (pipeline): the suite now reads `COMPOSE_FILE` (default `compose.yaml`), and the test gate sets
+  `COMPOSE_FILE=compose.release.yaml`, `COMPOSE_PROJECT_NAME=contingencia-ci` and
+  `CONTINGENCY_TAG=<temp tag>`. The gate therefore drives exactly the release stack it started from
+  the freshly built images, instead of relying on the prototype and release files sharing a project
+  name. A new step asserts that the running `mta`/`imap` containers use the freshly built image IDs,
+  so the gate cannot silently test a cached image. Failure diagnostics now include `compose ps`,
+  `compose images`, `postqueue -j`, `mailq` and all container logs.
+- Verification: the full suite passes locally both on the prototype stack and on the release stack
+  with the same environment the workflow uses; the CI run on the fixed commit is the final check.
 
 ### Build and test duration, final image sizes
 

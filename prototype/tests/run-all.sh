@@ -10,6 +10,10 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCENARIOS_DIR="$SCRIPT_DIR/scenarios"
 
+# Shared stack helpers: $COMPOSE_FILE (default compose.yaml) and ensure_services().
+TESTS_LIB_DIR="$SCRIPT_DIR/lib"
+. "$TESTS_LIB_DIR/stack.sh"
+
 ONLY=""
 KEEP=0
 
@@ -35,6 +39,9 @@ while [ "$#" -gt 0 ]; do
     esac
 done
 
+echo "stack: $COMPOSE_FILE"
+echo
+
 FAIL=0
 FAILED_NAMES=""
 
@@ -48,6 +55,10 @@ run_scenario() {
         FAILED_NAMES="$FAILED_NAMES scenario-$n"
         return
     fi
+    # Repair anything a previous scenario left behind (a failed assertion exits
+    # before the scenario can restart a service it stopped). Without this, one
+    # failure makes every later scenario that needs that service fail too.
+    ensure_services || echo "WARNING: stack did not become ready before scenario $n"
     echo "--- scenario $n: $(basename "$script") ---"
     sh "$script"
     rc=$?

@@ -5,7 +5,10 @@
 LIB_DIR="${TESTS_LIB_DIR:-$(cd "$(dirname "$0")" && pwd)}"
 SCRIPT_DIR="$LIB_DIR"
 REPO_ROOT=$(cd "$LIB_DIR/../../.." && pwd)
-COMPOSE="docker compose -f $REPO_ROOT/compose.yaml"
+
+# Provides $COMPOSE (from COMPOSE_FILE, default compose.yaml) and ensure_services().
+TESTS_LIB_DIR="$LIB_DIR"
+. "$LIB_DIR/stack.sh"
 
 PASS=0
 FAIL=0
@@ -23,15 +26,27 @@ fail() {
 }
 
 ensure_mta() {
-    # Best effort: make sure the mta container is running (crash-loop recovery).
-    if ! $COMPOSE exec -T mta postfix status >/dev/null 2>&1; then
-        $COMPOSE restart mta >/dev/null 2>&1
-        sleep 20
-    fi
+    # Make sure the Postfix daemon is answering. A previous scenario may have
+    # stopped the container; start it and poll until master(8) reports running.
+    $COMPOSE start mta >/dev/null 2>&1 || true
+    i=0
+    while [ "$i" -lt 30 ]; do
+        if $COMPOSE exec -T mta postfix status >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 1
+        i=$((i + 1))
+    done
+    # Last resort: restart the container and give master time to come up.
+    $COMPOSE restart mta >/dev/null 2>&1 || true
+    sleep 10
+    $COMPOSE exec -T mta postfix status >/dev/null 2>&1
 }
 
 reset_state() {
-    # Ensure the services are up before running checks.
+    # Start from a known-good stack before running checks. This also repairs
+    # state leaked by a scenario that failed after stopping a service.
+    ensure_services
     ensure_mta
     # Empty sink (Mailpit).
     sh "$SCRIPT_DIR/sink.sh" clear >/dev/null 2>&1
@@ -60,7 +75,43 @@ imap_wait_ready() {
 
 queue_pending_count() {
     # Prints number of queued messages.
-    $COMPOSE exec -T mta mailq 2>/dev/null | grep -cE '^[A-F0-9]{10}[[:space:]]' || true
+    #
+    # Use the JSON output: Postfix queue IDs are not fixed-width (10 characters
+    # locally, 11 on the CI runner). Parsing the fixed-width `mailq` layout with
+    # a regex missed every message on CI and made the queue checks fail there.
+    $COMPOSE exec -T mta postqueue -j 2>/dev/null | grep -c '"queue_id"' || true
+}
+
+wait_for_queue_at_least() {
+    # wait_for_queue_at_least <min_count> <timeout_seconds> ; exits 0 on success.
+    # A message is accepted by smtpd before qmgr records it in the queue, so poll
+    # instead of sampling once.
+    i=0
+    while [ "$i" -lt "$2" ]; do
+        c=$(queue_pending_count)
+        if [ "${c:-0}" -ge "$1" ]; then
+            return 0
+        fi
+        sleep 1
+        i=$((i + 1))
+    done
+    return 1
+}
+
+wait_for_queue_empty() {
+    # wait_for_queue_empty <timeout_seconds> ; exits 0 when the queue drains.
+    # qmgr removes a delivered message a moment after the sink acknowledges it,
+    # so a single read right after delivery is racy.
+    i=0
+    while [ "$i" -lt "$1" ]; do
+        c=$(queue_pending_count)
+        if [ "${c:-0}" -eq 0 ]; then
+            return 0
+        fi
+        sleep 1
+        i=$((i + 1))
+    done
+    return 1
 }
 
 wait_for_sink() {

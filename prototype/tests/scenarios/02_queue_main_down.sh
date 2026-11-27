@@ -14,8 +14,7 @@ else
     fail "02 (E1-04): delivered to sink while main was down"
 fi
 
-c=$(queue_pending_count)
-if [ "$c" -gt 0 ]; then
+if wait_for_queue_at_least 1 30; then
     pass "02 (E1-04): original queued while main down"
 else
     fail "02 (E1-04): original not queued while main down"
@@ -29,8 +28,7 @@ else
     fail "02 (E1-04): queued original not delivered after main returned"
 fi
 
-c=$(queue_pending_count)
-if [ "$c" = "0" ]; then
+if wait_for_queue_empty 60; then
     pass "02 (E1-04): queue drained after recovery"
 else
     fail "02 (E1-04): queue not drained after recovery"

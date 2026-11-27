@@ -15,7 +15,8 @@ The workflow file is `.github/workflows/images.yml`, named **Images**, with thes
 |---|---|
 | push to `main` | Build, test and **publish** |
 | pull request | Build and test only; **never publish** |
-| manual run (`workflow_dispatch`) | Behaves like a push to `main` (build, test, publish) |
+| manual run (`workflow_dispatch`) on `main` | Behaves like a push to `main` (build, test, publish) |
+| manual run on another branch | Build and test only; **never publish** |
 
 Concurrency: one group per ref (`images-<ref>`); in-progress runs for a pull request are
 cancelled when a newer run starts; runs on `main` are never cancelled mid-publish.
@@ -26,16 +27,26 @@ cancelled when a newer run starts; runs on `main` are never cancelled mid-publis
    Registry (`ghcr.io`), build from the component Dockerfile, push under temporary tag
    `e1-13-tmp-<full-commit-hash>`. Image labels are set: source repository, commit hash, build
    time.
-2. **Test** (`needs: build`): pull both temporary-tagged images, start the Compose stack from
-   them (`CONTINGENCY_TAG=e1-13-tmp-<sha> docker compose -f compose.release.yaml up -d --wait`),
-   then run the checks:
+2. **Test** (`needs: build`): pull both temporary-tagged images, start the release Compose stack
+   from them (`CONTINGENCY_TAG=e1-13-tmp-<sha> docker compose -f compose.release.yaml up -d
+   --wait`), then verify and exercise it:
+   - assert that the running `mta`/`imap` containers use the freshly built image IDs (the gate must
+     test the artifacts that will be published, not a cached image);
    - `postfix check` inside `mta`;
    - Dovecot configuration check inside `imap`;
    - both containers reach the healthy state (within timeout);
-   - scenario suite `prototype/tests/run-all.sh` (ticket E1-11).
-   
-   On failure: collect container logs and upload as workflow artifact
-   (`e1-13-failure-artifacts`).
+   - scenario suite `prototype/tests/run-all.sh` (ticket E1-11), run with
+     `COMPOSE_FILE=compose.release.yaml` and `COMPOSE_PROJECT_NAME=contingencia-ci` so the suite
+     drives exactly the stack under test.
+
+   The suite starts every service before each scenario (`ensure_services`), so a scenario that
+   stops a service and then fails cannot cascade into later scenarios. Queue checks use
+   `postqueue -j` rather than the fixed-width `mailq` text, because Postfix queue IDs vary in
+   length.
+
+   On failure: collect `compose ps`, `compose images`, the Postfix queue and all container logs,
+   and upload them as workflow artifact (`e1-13-failure-artifacts`). The stack is always torn down
+   at the end of the job.
 3. **Publish** (`needs: [build, test]`): runs only for `push` to `main` or `workflow_dispatch`; only
    if build and test passed. Retags the temporary-tagged images to the **full commit hash** and to
    `latest`, and pushes both to GitHub Container Registry.
@@ -115,6 +126,8 @@ Then add the pull + test + publish steps for the new image (or extend the matrix
   package settings.
 - Pull requests from forks do not get write access by design; the pipeline only publishes from
   `main`.
-- The test gate runs the full scenario suite on the runner; the suite already waits on conditions
-  with timeouts (E1-11). No fixed sleeps are added to work around flakiness.
-- Timing issues are the most common cause of flaky CI; keep the gate as designed.
+- The test gate runs the full scenario suite on the runner. The suite waits on observable
+  conditions with timeouts (E1-11); the two scenarios that restart Postfix with a temporary
+  configuration allow a bounded settle time before asserting.
+- Keep the gate meaningful: it must test the same image that is published, with the same compose
+  file (`COMPOSE_FILE`) and project. Fix real defects instead of loosening assertions.

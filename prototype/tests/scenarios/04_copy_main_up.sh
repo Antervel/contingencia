@@ -18,8 +18,7 @@ else
     fail "04 (E1-05): BCC copy not delivered to alice INBOX with main up"
 fi
 
-c=$(queue_pending_count)
-if [ "$c" = "0" ]; then
+if wait_for_queue_empty 30; then
     pass "04 (E1-05): queue empty after copy scenario"
 else
     fail "04 (E1-05): queue not empty after copy scenario"

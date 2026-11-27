@@ -8,8 +8,7 @@ $COMPOSE stop main >/dev/null 2>&1
 sleep 3
 send_msg sender@sender.test alice@client.test "E1-11 restart queue" "hello restart queue"
 
-c=$(queue_pending_count)
-if [ "$c" -gt 0 ]; then
+if wait_for_queue_at_least 1 30; then
     pass "13 (E1-07): original queued while main down"
 else
     fail "13 (E1-07): original not queued while main down"
@@ -17,9 +16,8 @@ fi
 
 $COMPOSE stop mta >/dev/null 2>&1
 $COMPOSE start mta >/dev/null 2>&1
-sleep 12
-c2=$(queue_pending_count)
-if [ "$c2" -gt 0 ]; then
+ensure_mta
+if wait_for_queue_at_least 1 30; then
     pass "13 (E1-07): queue survived mta restart"
 else
     fail "13 (E1-07): queue lost on mta restart"

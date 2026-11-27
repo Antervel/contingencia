@@ -20,6 +20,7 @@ jobs:
   build:
     name: build-${{ matrix.image }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -31,8 +32,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    outputs:
-      image: ${{ steps.image.outputs.image }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -73,6 +72,14 @@ jobs:
     name: test
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Drive exactly the release stack this gate starts. The scenario suite
+      # reads COMPOSE_FILE, so `exec`/`start`/`stop` act on the containers built
+      # from the freshly built images instead of a locally built prototype.
+      COMPOSE_FILE: compose.release.yaml
+      COMPOSE_PROJECT_NAME: contingencia-ci
+      CONTINGENCY_TAG: e1-13-tmp-${{ github.sha }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -93,8 +100,9 @@ jobs:
 
       - name: Pull freshly built images (temporary tags)
         run: |
-          docker pull "ghcr.io/${{ steps.repo.outputs.name }}/mta:e1-13-tmp-${{ github.sha }}"
-          docker pull "ghcr.io/${{ steps.repo.outputs.name }}/imap:e1-13-tmp-${{ github.sha }}"
+          set -euo pipefail
+          docker pull "ghcr.io/${{ steps.repo.outputs.name }}/mta:${CONTINGENCY_TAG}"
+          docker pull "ghcr.io/${{ steps.repo.outputs.name }}/imap:${CONTINGENCY_TAG}"
 
       - name: Start stack from freshly built images and wait for healthy state
         run: |
@@ -102,7 +110,7 @@ jobs:
           attempt=1
           max_attempts=2
           while [ "$attempt" -le "$max_attempts" ]; do
-            if CONTINGENCY_TAG=e1-13-tmp-${{ github.sha }} docker compose -f compose.release.yaml up -d --wait; then
+            if docker compose -f "$COMPOSE_FILE" up -d --wait; then
               echo "stack started from freshly built images on attempt ${attempt}"
               exit 0
             fi
@@ -113,34 +121,73 @@ jobs:
           echo "stack start failed after ${max_attempts} attempts"
           exit 1
 
+      - name: Verify the stack runs the freshly built images
+        run: |
+          set -euo pipefail
+          # The gate is only meaningful if it tests the artifacts that will be
+          # published, not a cached or locally built image.
+          for svc in mta imap; do
+            want="$(docker image inspect --format '{{.Id}}' \
+              "ghcr.io/${{ steps.repo.outputs.name }}/${svc}:${CONTINGENCY_TAG}")"
+            cid="$(docker compose -f "$COMPOSE_FILE" ps -q "$svc")"
+            got="$(docker inspect --format '{{.Image}}' "$cid")"
+            if [ "$want" != "$got" ]; then
+              echo "::error::${svc} is not running the freshly built image (want ${want}, got ${got})"
+              exit 1
+            fi
+            echo "${svc}: running freshly built image ${got}"
+          done
+
       - name: Postfix configuration check (mta)
-        run: docker compose -f compose.release.yaml exec -T mta postfix check
+        run: docker compose -f "$COMPOSE_FILE" exec -T mta postfix check
 
       - name: Dovecot configuration check (imap)
-        run: docker compose -f compose.release.yaml exec -T imap doveconf -n
+        run: docker compose -f "$COMPOSE_FILE" exec -T imap doveconf -n
 
       - name: Run scenario suite
         run: sh prototype/tests/run-all.sh
 
-      - name: Collect container logs for diagnostics
+      - name: Collect diagnostics on failure
         if: failure()
         run: |
-          docker compose -f compose.release.yaml logs --no-color mta imap main > /tmp/e1-13-compose-logs.txt || true
+          {
+            echo '=== docker compose ps -a ==='
+            docker compose -f "$COMPOSE_FILE" ps -a || true
+            echo
+            echo '=== docker compose images ==='
+            docker compose -f "$COMPOSE_FILE" images || true
+            echo
+            echo '=== postfix queue (postqueue -j) ==='
+            docker compose -f "$COMPOSE_FILE" exec -T mta postqueue -j || true
+            echo
+            echo '=== postfix mailq ==='
+            docker compose -f "$COMPOSE_FILE" exec -T mta mailq || true
+            echo
+            echo '=== container logs ==='
+            docker compose -f "$COMPOSE_FILE" logs --no-color mta imap main || true
+          } > /tmp/e1-13-diagnostics.txt 2>&1
 
-      - name: Upload logs and test output on failure
+      - name: Upload diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: e1-13-failure-artifacts
-          path: /tmp/e1-13-compose-logs.txt
+          path: /tmp/e1-13-diagnostics.txt
           if-no-files-found: ignore
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose -f "$COMPOSE_FILE" down -v --remove-orphans || true
 
   # Publish stage: only for pushes to main and manual runs, and only if build and test passed.
   publish:
     name: publish
     needs: [build, test]
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       packages: write
